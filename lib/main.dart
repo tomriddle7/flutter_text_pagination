@@ -131,48 +131,34 @@ class _MyHomePageState extends State<MyHomePage> {
                     height: 1.5),
               ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        unselectedItemColor: Colors.grey,
-        selectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        onTap: (index) {
-          setState(() {
-            switch (index) {
-              case 0:
-                currentPage = 0;
-                break;
-              case 1:
-                if (currentPage > 0) currentPage--;
-                break;
-              case 2:
-                if (currentPage < textIdx.length - 1) currentPage++;
-                break;
-              case 3:
-                currentPage = textIdx.length - 1;
-            }
-            txtStart = currentPage == 0 ? 0 : textIdx[currentPage - 1];
-            txtEnd = textIdx[currentPage];
-          });
-        },
-        items: [
-          BottomNavigationBarItem(
-            label: '',
-            icon: Icon(Icons.first_page),
-          ),
-          BottomNavigationBarItem(
-            label: '',
-            icon: Icon(Icons.navigate_before),
-          ),
-          BottomNavigationBarItem(
-            label: '',
-            icon: Icon(Icons.navigate_next),
-          ),
-          BottomNavigationBarItem(
-            label: '',
-            icon: Icon(Icons.last_page),
-          ),
-        ],
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          children: [
+            Container(
+              height: 56.0,
+              width: MediaQuery.of(context).size.width / 4 * 3,
+              child: Slider(
+                value: currentPage.toDouble(),
+                min: 0,
+                max: textIdx.isEmpty ? 1 : textIdx.length.toDouble() - 1.0,
+                divisions: textIdx.isEmpty ? 1 : textIdx.length - 2,
+                onChanged: (double value) {
+                  setState(
+                    () {
+                      if (textIdx.isNotEmpty) {
+                        currentPage = value.toInt();
+                        txtStart = value == 0.0 ? 0 : textIdx[currentPage - 1];
+                        txtEnd = textIdx[currentPage];
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+            Spacer(),
+            Text(textIdx.isNotEmpty ? '${currentPage + 1}/${textIdx.length}' : '0/0'),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: loadText,
