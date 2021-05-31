@@ -23,6 +23,56 @@ class MyApp extends StatelessWidget {
   }
 }
 
+Stream<int> getPageOffsets(args) async* {
+  num lineText = 0;
+  int lineCount = 0;
+
+  if (args[0].isNotEmpty) {
+    int i = 0;
+    while (true) {
+      if (lineCount >= args[1]) {
+        lineCount = 0;
+        yield i;
+      }
+
+      if (args[0][i].contains(new RegExp(r'[A-Za-z ]'))) {
+        lineText += 0.5;
+      } else
+        lineText += 1;
+
+      if (lineText >= args[2] || args[0][i] == '\n') {
+        lineText = 0;
+        lineCount++;
+      }
+      if (i == args[0].length - 1)
+        break;
+      else
+        i++;
+    }
+    if (lineText > 0) {
+      yield i;
+    }
+  }
+}
+
+TextPainter getTextPainter(text) {
+  TextPainter textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      textScaleFactor: MediaQueryData.fromWindow(window).textScaleFactor);
+
+  textPainter.text = TextSpan(
+    text: text,
+    style: TextStyle(
+        locale: Locale('en_EN'),
+        fontFamily: "Roboto",
+        fontSize: 26,
+        letterSpacing: 3.0,
+        height: 1.5),
+  );
+
+  return textPainter;
+}
+
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
@@ -53,63 +103,22 @@ class _MyHomePageState extends State<MyHomePage> {
     // double padding = MediaQueryData.fromWindow(window).padding.top + MediaQueryData.fromWindow(window).padding.bottom;
     // height -= padding;
     double width = MediaQueryData.fromWindow(window).size.width;
-    setState(() {
-      textIdx = getPageOffsets(rawText, height, width);
-
-      isLoding = false;
-      currentPage = 0;
-      txtStart = 0;
-      txtEnd = textIdx[currentPage];
+    TextPainter test = getTextPainter('''가''');
+    test.layout(maxWidth: width);
+    double lineHeight = test.preferredLineHeight;
+    double charWidth = test.width;
+    int lineNumberPerPage = (height ~/ lineHeight) - 1;
+    int charNumberPerLine = width ~/ charWidth;
+    getPageOffsets([rawText, lineNumberPerPage, charNumberPerLine])
+        .listen((value) {
+      setState(() {
+        textIdx.add(value);
+        isLoding = false;
+        currentPage = 0;
+        txtStart = 0;
+        txtEnd = textIdx[currentPage];
+      });
     });
-  }
-
-  List<num> getPageOffsets(String content, double pageHeight, double width) {
-    String tempStr = content;
-    List<num> pageConfig = [];
-    if (content.isEmpty) {
-      return pageConfig;
-    }
-
-    TextPainter textPainter = getTextPainter(tempStr, width);
-    textPainter.layout(maxWidth: width);
-    double textHeight = textPainter.height;
-    double lineHeight = textPainter.preferredLineHeight;
-    // int lineNumber = textHeight ~/ lineHeight;
-    int lineNumberPerPage = pageHeight ~/ lineHeight;
-    // int pageNum = (lineNumber / lineNumberPerPage).ceil();
-    double actualPageHeight = (lineNumberPerPage - 1) * lineHeight;
-    double index = 1.0;
-    while (true) {
-      var end = textPainter
-          .getPositionForOffset(Offset(width, actualPageHeight * index))
-          .offset;
-
-      if (actualPageHeight * index > textHeight) {
-        break;
-      }
-      index += 1.0;
-
-      pageConfig.add(end);
-    }
-    return pageConfig;
-  }
-
-  TextPainter getTextPainter(text, width) {
-    TextPainter textPainter = TextPainter(
-        textDirection: TextDirection.ltr,
-        textScaleFactor: MediaQueryData.fromWindow(window).textScaleFactor);
-
-    textPainter.text = TextSpan(
-      text: text,
-      style: TextStyle(
-          locale: Locale('en_EN'),
-          fontFamily: "Roboto",
-          fontSize: 26,
-          letterSpacing: 3.0,
-          height: 1.5),
-    );
-
-    return textPainter;
   }
 
   @override
@@ -156,7 +165,9 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             Spacer(),
-            Text(textIdx.isNotEmpty ? '${currentPage + 1}/${textIdx.length}' : '0/0'),
+            Text(textIdx.isNotEmpty
+                ? '${currentPage + 1}/${textIdx.length}'
+                : '0/0'),
           ],
         ),
       ),
